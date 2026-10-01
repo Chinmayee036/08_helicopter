@@ -45,10 +45,14 @@ class GameEngine:
         # Task 3: Increase score/distance steadily while playing
         self.score += 1
 
-        # Spawn obstacles
+        # Spawn obstacles with all required arguments
         self.spawn_timer += 1
         if self.spawn_timer > 90:
-            self.obstacles.append(Obstacle(self.width, self.height))
+            gap_y = random.randint(150, self.height - 150)
+            gap_height = 120
+            wall_width = 50
+            speed = 4
+            self.obstacles.append(Obstacle(self.width, gap_y, gap_height, wall_width, self.height, speed))
             self.spawn_timer = 0
 
         # Update obstacles
@@ -61,7 +65,8 @@ class GameEngine:
         # Task 2 & 4: Obstacle Collision and Shield check
         heli_rect = self.helicopter.get_rect()
         for obs in self.obstacles:
-            top_wall, bottom_wall = obs.get_rects()
+            top_wall = obs.get_top_rect()
+            bottom_wall = obs.get_bottom_rect()
             if heli_rect.colliderect(top_wall) or heli_rect.colliderect(bottom_wall):
                 if self.helicopter.shield_active:
                     # Task 4: Shield absorbs the hit and deactivates
