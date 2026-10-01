@@ -5,39 +5,32 @@ Run with:  python3 main.py
 
 Controls: Up/Down arrows to move.
 """
-
 import pygame
-
 from game.game_engine import GameEngine
-from game.renderer import WINDOW_SIZE
-
+from game.renderer import Renderer
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode(WINDOW_SIZE)
-    pygame.display.set_caption("Helicopter")
-    clock = pygame.time.Clock()
-    font = pygame.font.SysFont("consolas", 22)
+    width, height = 800, 600
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption("Helicopter Game")
 
-    engine = GameEngine()
+    clock = pygame.time.Clock()
+    engine = GameEngine(width, height)
+    renderer = Renderer(screen, width, height)
+
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN:
-                engine.handle_keydown(event.key)
+            engine.handle_input(event)
 
-        keys = pygame.key.get_pressed()
-        engine.handle_input(keys)
         engine.update()
-        engine.draw(screen, font)
-
-        pygame.display.flip()
+        renderer.draw(engine)
         clock.tick(60)
 
     pygame.quit()
-
 
 if __name__ == "__main__":
     main()
