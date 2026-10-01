@@ -8,50 +8,66 @@ That's Tasks 2, 3, and 4. Movement also has known bugs (see
 game/helicopter.py) that Task 1 asks you to fix.
 """
 
+import pygame
 import random
-
 from game.helicopter import Helicopter
 from game.obstacle import Obstacle
-from game.renderer import WIDTH, HEIGHT
-
-SPAWN_INTERVAL_FRAMES = 90
-GAP_HEIGHT = 150
-WALL_WIDTH = 60
-SCROLL_SPEED = 3
-
 
 class GameEngine:
-    def __init__(self):
-        self.helicopter = Helicopter(x=100, y=HEIGHT / 2)
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.reset_game()
+
+    def reset_game(self):
+        self.helicopter = Helicopter(100, self.height // 2)
         self.obstacles = []
-        self.frames_until_spawn = 0
+        self.game_over = False
+        self.score = 0  # Task 3: Distance scoring
+        self.spawn_timer = 0
 
-    def _spawn_obstacle(self):
-        margin = 60
-        gap_y = random.randint(margin + GAP_HEIGHT // 2, HEIGHT - margin - GAP_HEIGHT // 2)
-        self.obstacles.append(Obstacle(
-            x=WIDTH, gap_y=gap_y, gap_height=GAP_HEIGHT,
-            wall_width=WALL_WIDTH, screen_height=HEIGHT, speed=SCROLL_SPEED,
-        ))
-
-    def handle_input(self, keys_pressed):
-        self.helicopter.handle_input(keys_pressed)
-
-    def handle_keydown(self, key):
-        pass
+    def handle_input(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r and self.game_over:
+                self.reset_game()
+            # Task 4: Press SPACE to activate shield
+            elif event.key == pygame.K_SPACE:
+                self.helicopter.shield_active = True
 
     def update(self):
-        self.helicopter.update(HEIGHT)
+        if self.game_over:
+            return
 
-        self.frames_until_spawn -= 1
-        if self.frames_until_spawn <= 0:
-            self._spawn_obstacle()
-            self.frames_until_spawn = SPAWN_INTERVAL_FRAMES
+        keys = pygame.key.get_pressed()
+        self.helicopter.handle_input(keys)
+        self.helicopter.update(self.height)
 
-        for obstacle in self.obstacles:
-            obstacle.update()
-        self.obstacles = [o for o in self.obstacles if not o.is_off_screen()]
+        # Task 3: Increase score/distance steadily while playing
+        self.score += 1
 
-    def draw(self, surface, font):
-        from game import renderer
-        renderer.draw_scene(surface, self.helicopter, self.obstacles)
+        # Spawn obstacles
+        self.spawn_timer += 1
+        if self.spawn_timer > 90:
+            self.obstacles.append(Obstacle(self.width, self.height))
+            self.spawn_timer = 0
+
+        # Update obstacles
+        for obs in self.obstacles:
+            obs.update()
+
+        # Remove off-screen obstacles
+        self.obstacles = [obs for obs in self.obstacles if not obs.is_off_screen()]
+
+        # Task 2 & 4: Obstacle Collision and Shield check
+        heli_rect = self.helicopter.get_rect()
+        for obs in self.obstacles:
+            top_wall, bottom_wall = obs.get_rects()
+            if heli_rect.colliderect(top_wall) or heli_rect.colliderect(bottom_wall):
+                if self.helicopter.shield_active:
+                    # Task 4: Shield absorbs the hit and deactivates
+                    self.helicopter.shield_active = False
+                    self.obstacles.remove(obs)
+                    break
+                else:
+                    # Task 2: Trigger game over on collision
+                    self.game_over = True
