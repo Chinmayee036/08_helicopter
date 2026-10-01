@@ -1,31 +1,44 @@
 """
 renderer: all pygame drawing lives here, kept separate from game logic.
 """
-
 import pygame
 
-WIDTH, HEIGHT = 700, 500
-WINDOW_SIZE = (WIDTH, HEIGHT)
+class Renderer:
+    def __init__(self, screen, width, height):
+        self.screen = screen
+        self.width = width
+        self.height = height
+        pygame.font.init()
+        self.font = pygame.font.SysFont("Arial", 24)
+        self.large_font = pygame.font.SysFont("Arial", 48)
 
-COLOR_BG = (140, 200, 230)
-COLOR_HELI = (60, 60, 70)
-COLOR_OBSTACLE = (70, 150, 80)
-COLOR_TEXT = (20, 20, 20)
+    def draw(self, engine):
+        # Background color (Sky blue)
+        self.screen.fill((135, 206, 235))
 
+        # Draw helicopter
+        engine.helicopter.draw(self.screen)
 
-def draw_scene(surface, helicopter, obstacles):
-    surface.fill(COLOR_BG)
-    for obstacle in obstacles:
-        pygame.draw.rect(surface, COLOR_OBSTACLE, obstacle.get_top_rect())
-        pygame.draw.rect(surface, COLOR_OBSTACLE, obstacle.get_bottom_rect())
-    pygame.draw.rect(surface, COLOR_HELI, helicopter.get_rect(), border_radius=4)
+        # Draw obstacles
+        for obs in engine.obstacles:
+            obs.draw(self.screen)
 
+        # Task 3: Render and display the current score on top left
+        score_surface = self.font.render(f"Distance Score: {engine.score}", True, (0, 0, 0))
+        self.screen.blit(score_surface, (20, 20))
 
-def draw_text(surface, font, text, pos, color=COLOR_TEXT):
-    surface.blit(font.render(text, True, color), pos)
+        # Task 4: Display shield status text
+        shield_text = "Shield: ACTIVE" if engine.helicopter.shield_active else "Shield: Ready (Press SPACE)"
+        shield_color = (0, 100, 255) if engine.helicopter.shield_active else (100, 100, 100)
+        shield_surface = self.font.render(shield_text, True, shield_color)
+        self.screen.blit(shield_surface, (20, 50))
 
+        # Game Over message screen
+        if engine.game_over:
+            game_over_surf = self.large_font.render("GAME OVER", True, (255, 0, 0))
+            final_score_surf = self.font.render(f"Final Distance: {engine.score} | Press 'R' to Restart", True, (0, 0, 0))
+            
+            self.screen.blit(game_over_surf, (self.width // 2 - 120, self.height // 2 - 50))
+            self.screen.blit(final_score_surf, (self.width // 2 - 180, self.height // 2 + 10))
 
-def draw_banner(surface, font, text):
-    surf = font.render(text, True, (180, 40, 40))
-    rect = surf.get_rect(center=(surface.get_width() // 2, surface.get_height() // 2))
-    surface.blit(surf, rect)
+        pygame.display.flip()
