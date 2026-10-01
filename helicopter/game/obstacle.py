@@ -3,70 +3,31 @@ Obstacle: a scrolling wall pair with a gap the helicopter must fly
 through.
 """
 import pygame
-import random
-from game.helicopter import Helicopter
-from game.obstacle import Obstacle
 
-class GameEngine:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.reset_game()
-
-    def reset_game(self):
-        self.helicopter = Helicopter(100, self.height // 2)
-        self.obstacles = []
-        self.game_over = False
-        self.score = 0  # Task 3: Distance scoring
-        self.spawn_timer = 0
-
-    def handle_input(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_r and self.game_over:
-                self.reset_game()
-            # Task 4: Press SPACE to activate shield
-            elif event.key == pygame.K_SPACE:
-                self.helicopter.shield_active = True
+class Obstacle:
+    def __init__(self, x, gap_y, gap_height, wall_width, screen_height, speed):
+        self.x = x
+        self.gap_y = gap_y
+        self.gap_height = gap_height
+        self.wall_width = wall_width
+        self.screen_height = screen_height
+        self.speed = speed
+        self.scored = False   # used for distance/pass tracking later
 
     def update(self):
-        if self.game_over:
-            return
+        self.x -= self.speed
 
-        keys = pygame.key.get_pressed()
-        self.helicopter.handle_input(keys)
-        self.helicopter.update(self.height)
+    def is_off_screen(self):
+        return self.x + self.wall_width < 0
 
-        # Task 3: Increase score/distance steadily while playing
-        self.score += 1
+    def get_top_rect(self):
+        top_height = self.gap_y - self.gap_height / 2
+        return pygame.Rect(int(self.x), 0, self.wall_width, int(top_height))
 
-        # Spawn obstacles (using typical parameters matching obstacle class)
-        self.spawn_timer += 1
-        if self.spawn_timer > 90:
-            gap_y = random.randint(150, self.height - 150)
-            gap_height = 120
-            wall_width = 50
-            speed = 4
-            self.obstacles.append(Obstacle(self.width, gap_y, gap_height, wall_width, self.height, speed))
-            self.spawn_timer = 0
+    def get_bottom_rect(self):
+        bottom_y = self.gap_y + self.gap_height / 2
+        return pygame.Rect(int(self.x), int(bottom_y), self.wall_width, int(self.screen_height - bottom_y))
 
-        # Update obstacles
-        for obs in self.obstacles:
-            obs.update()
-
-        # Remove off-screen obstacles
-        self.obstacles = [obs for obs in self.obstacles if not obs.is_off_screen()]
-
-        # Task 2 & 4: Obstacle Collision and Shield check using obstacle's exact methods
-        heli_rect = self.helicopter.get_rect()
-        for obs in self.obstacles:
-            top_wall = obs.get_top_rect()
-            bottom_wall = obs.get_bottom_rect()
-            if heli_rect.colliderect(top_wall) or heli_rect.colliderect(bottom_wall):
-                if self.helicopter.shield_active:
-                    # Task 4: Shield absorbs the hit and deactivates
-                    self.helicopter.shield_active = False
-                    self.obstacles.remove(obs)
-                    break
-                else:
-                    # Task 2: Trigger game over on collision
-                    self.game_over = True
+    def draw(self, surface):
+        pygame.draw.rect(surface, (34, 139, 34), self.get_top_rect())
+        pygame.draw.rect(surface, (34, 139, 34), self.get_bottom_rect())
